@@ -1,6 +1,23 @@
 use std::collections::HashMap;
 use structopt::StructOpt;
 
+enum YahtzeeError {
+  PathError(String),
+  ParseError(String),
+}
+
+impl From<std::io::Error> for YahtzeeError {
+  fn from(e: std::io::Error) -> Self {
+    Self::PathError(format!("Path error: {}", e))
+  }
+}
+
+impl From<std::num::ParseIntError> for YahtzeeError {
+  fn from(e: std::num::ParseIntError) -> Self {
+    Self::ParseError(format!("Parse error: {}", e))
+  }
+}
+
 #[derive(StructOpt)]
 struct Cli {
   #[structopt(short = "p", long = "path")]
@@ -9,14 +26,12 @@ struct Cli {
   rolls: Vec<i64>,
 }
 
-fn rolls_for_path(path: std::path::PathBuf) -> Result<Vec<i64>, Box<dyn std::error::Error>> {
+fn rolls_for_path(path: std::path::PathBuf) -> Result<Vec<i64>, YahtzeeError> {
   let file_contents = std::fs::read_to_string(path)?;
-  Ok(
-    file_contents
-      .lines()
-      .map(|s| s.parse::<i64>().unwrap())
-      .collect(),
-  )
+  file_contents
+    .lines()
+    .map(|s| s.parse::<i64>())
+    .collect::<Result<Vec<i64>, YahtzeeError>>()
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
