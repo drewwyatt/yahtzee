@@ -3,11 +3,28 @@ use structopt::StructOpt;
 
 #[derive(StructOpt)]
 struct Cli {
+  #[structopt(short = "p", long = "path")]
+  path: Option<std::path::PathBuf>,
+
   rolls: Vec<i64>,
 }
 
-fn main() {
-  let rolls = Cli::from_args().rolls;
+fn rolls_for_path(path: std::path::PathBuf) -> Result<Vec<i64>, Box<dyn std::error::Error>> {
+  let file_contents = std::fs::read_to_string(path)?;
+  Ok(
+    file_contents
+      .lines()
+      .map(|s| s.parse::<i64>().unwrap())
+      .collect(),
+  )
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+  let input = Cli::from_args();
+  let rolls = match input.path {
+    Some(p) => rolls_for_path(p)?,
+    None => input.rolls,
+  };
   let mut counts = HashMap::new();
 
   for roll in rolls {
@@ -25,5 +42,6 @@ fn main() {
     };
   }
 
-  println!("{}", highest_score)
+  println!("{}", highest_score);
+  Ok(())
 }
